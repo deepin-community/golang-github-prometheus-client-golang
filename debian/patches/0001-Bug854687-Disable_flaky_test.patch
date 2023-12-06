@@ -1,0 +1,22 @@
+From: Martina Ferrari <tina@debian.org>
+Date: Fri, 28 Jul 2023 03:31:51 +0800
+Subject: Disable flaky test.
+
+Last-Update: 2017-08-28
+Forwarded: https://github.com/prometheus/client_golang/issues/338
+---
+ prometheus/summary_test.go | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/prometheus/summary_test.go b/prometheus/summary_test.go
+index 2a0d1f3..c20d02e 100644
+--- a/prometheus/summary_test.go
++++ b/prometheus/summary_test.go
+@@ -371,6 +371,7 @@ func TestSummaryVecConcurrency(t *testing.T) {
+ }
+ 
+ func TestSummaryDecay(t *testing.T) {
++	t.Skip("Skipping flaky test.")
+ 	if testing.Short() {
+ 		t.Skip("Skipping test in short mode.")
+ 		// More because it depends on timing than because it is particularly long...

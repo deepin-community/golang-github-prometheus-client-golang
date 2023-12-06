@@ -1,0 +1,24 @@
+From: Daniel Swarbrick <dswarbrick@debian.org>
+Date: Fri, 28 Jul 2023 03:31:51 +0800
+Subject: Skip buggy TestNativeHistogram test on ppc64el
+
+Bug: https://github.com/prometheus/client_golang/issues/1165
+Last-Update: 2022-11-09
+---
+ prometheus/histogram_test.go | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/prometheus/histogram_test.go b/prometheus/histogram_test.go
+index 60b43fd..9455c3a 100644
+--- a/prometheus/histogram_test.go
++++ b/prometheus/histogram_test.go
+@@ -469,6 +469,9 @@ func TestHistogramExemplar(t *testing.T) {
+ }
+ 
+ func TestNativeHistogram(t *testing.T) {
++	if runtime.GOARCH == "ppc64le" {
++		t.Skip("Skipping buggy test on ppc64el")
++	}
+ 	now := time.Now()
+ 
+ 	scenarios := []struct {
