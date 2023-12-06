@@ -1,0 +1,44 @@
+From: Daniel Swarbrick <dswarbrick@debian.org>
+Date: Fri, 28 Jul 2023 03:31:51 +0800
+Subject: Use explicit int64 types for millisecond-resolution timestamps
+
+Bug: https://github.com/prometheus/client_golang/issues/1132
+Last-Update: 2022-09-16
+
+Untyped ints on 32-bit archs will lead to overflows when trying to store
+millisecond-resolution Unix timestamps. This patch specifies them as int64.
+---
+ api/prometheus/v1/api.go      | 4 ++--
+ api/prometheus/v1/api_test.go | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/api/prometheus/v1/api.go b/api/prometheus/v1/api.go
+index 1cfe8d8..634f937 100644
+--- a/api/prometheus/v1/api.go
++++ b/api/prometheus/v1/api.go
+@@ -686,8 +686,8 @@ type TSDBHeadStats struct {
+ 	NumSeries     int `json:"numSeries"`
+ 	NumLabelPairs int `json:"numLabelPairs"`
+ 	ChunkCount    int `json:"chunkCount"`
+-	MinTime       int `json:"minTime"`
+-	MaxTime       int `json:"maxTime"`
++	MinTime       int64 `json:"minTime"`
++	MaxTime       int64 `json:"maxTime"`
+ }
+ 
+ // WalReplayStatus represents the wal replay status.
+diff --git a/api/prometheus/v1/api_test.go b/api/prometheus/v1/api_test.go
+index e87e483..c0ee49a 100644
+--- a/api/prometheus/v1/api_test.go
++++ b/api/prometheus/v1/api_test.go
+@@ -1060,8 +1060,8 @@ func TestAPIs(t *testing.T) {
+ 					"numSeries":     18476,
+ 					"numLabelPairs": 4301,
+ 					"chunkCount":    72692,
+-					"minTime":       1634644800304,
+-					"maxTime":       1634650590304,
++					"minTime":       int64(1634644800304),
++					"maxTime":       int64(1634650590304),
+ 				},
+ 				"seriesCountByMetricName": []interface{}{
+ 					map[string]interface{}{
