@@ -1,0 +1,26 @@
+From: Daniel Swarbrick <dswarbrick@debian.org>
+Date: Mon, 13 Nov 2023 18:50:13 +0100
+Subject: Fix basic auth test
+
+Forwarded: not-needed
+Last-Update: 2023-11-13
+
+The function signature for prometheus/common/config.NewBasicAuthRoundTripper
+changed in v0.45.0, thus necessitating this simple patch.
+---
+ api/prometheus/v1/example_test.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/api/prometheus/v1/example_test.go b/api/prometheus/v1/example_test.go
+index a73d283..04cfac6 100644
+--- a/api/prometheus/v1/example_test.go
++++ b/api/prometheus/v1/example_test.go
+@@ -135,7 +135,7 @@ func ExampleAPI_queryRangeWithBasicAuth() {
+ 	client, err := api.NewClient(api.Config{
+ 		Address: "http://demo.robustperception.io:9090",
+ 		// We can use amazing github.com/prometheus/common/config helper!
+-		RoundTripper: config.NewBasicAuthRoundTripper("me", "definitely_me", "", api.DefaultRoundTripper),
++		RoundTripper: config.NewBasicAuthRoundTripper("me", "definitely_me", "", "", api.DefaultRoundTripper),
+ 	})
+ 	if err != nil {
+ 		fmt.Printf("Error creating client: %v\n", err)
