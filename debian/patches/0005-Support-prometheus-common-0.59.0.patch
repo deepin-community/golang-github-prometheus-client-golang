@@ -1,0 +1,207 @@
+From: Daniel Swarbrick <dswarbrick@debian.org>
+Date: Mon, 9 Sep 2024 14:08:15 +0200
+Subject: Support prometheus/common 0.59.0
+
+Origin: https://github.com/prometheus/client_golang/pull/1618
+
+github.com/prometheus/common changed the default UTF-8 escaping method
+to underscores, which broke some tests in prometheus/client_golang.
+---
+ prometheus/registry_test.go     | 36 ++++++++++++++++++------------------
+ prometheus/testutil/testutil.go |  5 +++--
+ 2 files changed, 21 insertions(+), 20 deletions(-)
+
+diff --git a/prometheus/registry_test.go b/prometheus/registry_test.go
+index 61fc1c5..35a74d2 100644
+--- a/prometheus/registry_test.go
++++ b/prometheus/registry_test.go
+@@ -361,7 +361,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: []byte{},
+ 			},
+@@ -372,7 +372,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: []byte{},
+ 			},
+@@ -383,7 +383,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: []byte{},
+ 			},
+@@ -394,7 +394,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=underscores`,
+ 				},
+ 				body: []byte{},
+ 			},
+@@ -405,7 +405,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: expectedMetricFamilyAsText,
+ 			},
+@@ -417,7 +417,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=underscores`,
+ 				},
+ 				body: expectedMetricFamilyAsBytes,
+ 			},
+@@ -429,7 +429,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: externalMetricFamilyAsText,
+ 			},
+@@ -441,7 +441,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=underscores`,
+ 				},
+ 				body: externalMetricFamilyAsBytes,
+ 			},
+@@ -453,7 +453,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -472,7 +472,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: []byte{},
+ 			},
+@@ -483,7 +483,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: expectedMetricFamilyAsText,
+ 			},
+@@ -495,7 +495,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -514,7 +514,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -533,7 +533,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -552,7 +552,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=compact-text; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=compact-text; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -571,7 +571,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=compact-text; escaping=values`,
++					"Content-Type": `application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=compact-text; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+@@ -609,7 +609,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: expectedMetricFamilyAsText,
+ 			},
+@@ -666,7 +666,7 @@ collected metric "broken_metric" { label:<name:"foo" value:"bar" > label:<name:"
+ 			},
+ 			out: output{
+ 				headers: map[string]string{
+-					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=values`,
++					"Content-Type": `text/plain; version=0.0.4; charset=utf-8; escaping=underscores`,
+ 				},
+ 				body: bytes.Join(
+ 					[][]byte{
+diff --git a/prometheus/testutil/testutil.go b/prometheus/testutil/testutil.go
+index e0ac346..a146218 100644
+--- a/prometheus/testutil/testutil.go
++++ b/prometheus/testutil/testutil.go
+@@ -46,6 +46,7 @@ import (
+ 	"github.com/kylelemons/godebug/diff"
+ 	dto "github.com/prometheus/client_model/go"
+ 	"github.com/prometheus/common/expfmt"
++	"github.com/prometheus/common/model"
+ 	"google.golang.org/protobuf/proto"
+ 
+ 	"github.com/prometheus/client_golang/prometheus"
+@@ -297,13 +298,13 @@ func compareMetricFamilies(got, expected []*dto.MetricFamily, metricNames ...str
+ // result.
+ func compare(got, want []*dto.MetricFamily) error {
+ 	var gotBuf, wantBuf bytes.Buffer
+-	enc := expfmt.NewEncoder(&gotBuf, expfmt.NewFormat(expfmt.TypeTextPlain))
++	enc := expfmt.NewEncoder(&gotBuf, expfmt.NewFormat(expfmt.TypeTextPlain).WithEscapingScheme(model.NoEscaping))
+ 	for _, mf := range got {
+ 		if err := enc.Encode(mf); err != nil {
+ 			return fmt.Errorf("encoding gathered metrics failed: %w", err)
+ 		}
+ 	}
+-	enc = expfmt.NewEncoder(&wantBuf, expfmt.NewFormat(expfmt.TypeTextPlain))
++	enc = expfmt.NewEncoder(&wantBuf, expfmt.NewFormat(expfmt.TypeTextPlain).WithEscapingScheme(model.NoEscaping))
+ 	for _, mf := range want {
+ 		if err := enc.Encode(mf); err != nil {
+ 			return fmt.Errorf("encoding expected metrics failed: %w", err)

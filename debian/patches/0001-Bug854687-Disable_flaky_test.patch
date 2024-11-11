@@ -9,7 +9,7 @@ Forwarded: https://github.com/prometheus/client_golang/issues/338
  1 file changed, 1 insertion(+)
 
 diff --git a/prometheus/summary_test.go b/prometheus/summary_test.go
-index 2a0d1f3..c20d02e 100644
+index d1ea072..9a4c31a 100644
 --- a/prometheus/summary_test.go
 +++ b/prometheus/summary_test.go
 @@ -371,6 +371,7 @@ func TestSummaryVecConcurrency(t *testing.T) {

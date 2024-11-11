@@ -1,3 +1,107 @@
+golang-github-prometheus-client-golang (1.20.5-1) unstable; urgency=medium
+
+  * New upstream (bugfix) release
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Thu, 31 Oct 2024 18:13:54 +0000
+
+golang-github-prometheus-client-golang (1.20.4-1) unstable; urgency=medium
+
+  * New upstream (bugfix) release
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Thu, 19 Sep 2024 13:03:13 +0000
+
+golang-github-prometheus-client-golang (1.20.3-2) unstable; urgency=medium
+
+  * Add new 0005-Support-prometheus-common-0.59.0.patch
+  * Bump golang-github-prometheus-common-dev version constraint (>= 0.59.0)
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Mon, 09 Sep 2024 12:11:52 +0000
+
+golang-github-prometheus-client-golang (1.20.3-1) unstable; urgency=medium
+
+  * New upstream (bugfix) release
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Sun, 08 Sep 2024 14:07:34 +0000
+
+golang-github-prometheus-client-golang (1.20.2-1) unstable; urgency=medium
+
+  * New upstream (bugfix) release
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Fri, 23 Aug 2024 19:16:31 +0000
+
+golang-github-prometheus-client-golang (1.20.1-1) unstable; urgency=medium
+
+  * New upstream (bugfix) release
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Tue, 20 Aug 2024 12:40:33 +0000
+
+golang-github-prometheus-client-golang (1.20.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * Drop obsolete 0004-Support-prometheus-common-v0.55.0.patch (implemented
+    upstream)
+  * Refresh patches
+  * d/rules: add 'dagger' to DH_GOLANG_EXCLUDES
+  * d/control: add new Build-Depends:
+    - golang-github-klauspost-compress-dev
+    - golang-github-kylelemons-godebug-dev
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Mon, 19 Aug 2024 13:13:46 +0000
+
+golang-github-prometheus-client-golang (1.19.1-2) unstable; urgency=medium
+
+  * Team upload.
+  * Update metrics in tests for Go1.23 and Go1.22.6
+
+ -- Shengjing Zhu <zhsj@debian.org>  Wed, 14 Aug 2024 18:54:57 +0800
+
+golang-github-prometheus-client-golang (1.19.1-1) unstable; urgency=medium
+
+  * New upstream release (no code changes)
+  * Add new 0005-Support-prometheus-common-v0.55.0.patch
+  * Bump golang-github-prometheus-common-dev version constraint (>= 0.55.0)
+  * Bump Standards-Version to 4.7.0 (no changes)
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Mon, 12 Aug 2024 14:18:58 +0000
+
+golang-github-prometheus-client-golang (1.19.0-2) unstable; urgency=medium
+
+  * Team upload.
+  * Disable TestExpectedRuntimeMetrics, TestGoCollector_ExposedMetrics
+    Closes: #1076884
+
+ -- Reinhard Tartler <siretart@tauware.de>  Thu, 01 Aug 2024 10:06:12 -0400
+
+golang-github-prometheus-client-golang (1.19.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * Drop obsolete patches:
+    - 0004-Relax-brittle-HTTP-header-test.patch (resolved upstream)
+    - 0005-Support-Go-1.22.patch (implemented upstream)
+  * Bump golang-github-prometheus-common-dev version constraint (>= 0.48.0)
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Sat, 09 Mar 2024 11:20:48 +0000
+
+golang-github-prometheus-client-golang (1.18.0-3) unstable; urgency=medium
+
+  * Team upload
+  * Backport patch for Go 1.22
+
+ -- Shengjing Zhu <zhsj@debian.org>  Fri, 01 Mar 2024 01:40:25 +0800
+
+golang-github-prometheus-client-golang (1.18.0-2) unstable; urgency=medium
+
+  * Add new 0004-Relax-brittle-HTTP-header-test.patch
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Sat, 17 Feb 2024 16:23:16 +0000
+
+golang-github-prometheus-client-golang (1.18.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * Drop obsolete 0004-Fix-basic-auth-test.patch (fixed upstream)
+
+ -- Daniel Swarbrick <dswarbrick@debian.org>  Sat, 13 Jan 2024 23:18:42 +0000
+
 golang-github-prometheus-client-golang (1.17.0-2) unstable; urgency=medium
 
   * Add new 0004-Fix-basic-auth-test.patch and bump minimum required

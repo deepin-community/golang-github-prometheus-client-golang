@@ -20,13 +20,32 @@ test: deps common-test
 .PHONY: test-short
 test-short: deps common-test-short
 
+# Overriding Makefile.common check_license target to add
+# dagger paths
+.PHONY: common-check_license
+common-check_license:
+	@echo ">> checking license header"
+	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*' ! -path './dagger/internal/*') ; do \
+               awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+       done); \
+       if [ -n "$${licRes}" ]; then \
+               echo "license header checking failed:"; echo "$${licRes}"; \
+               exit 1; \
+       fi
+
 .PHONY: generate-go-collector-test-files
-VERSIONS := 1.19 1.20 1.21
+file := supported_go_versions.txt
+VERSIONS := $(shell cat ${file})
 generate-go-collector-test-files:
 	for GO_VERSION in $(VERSIONS); do \
-		docker run --rm -v $(PWD):/workspace -w /workspace golang:$$GO_VERSION go run prometheus/gen_go_collector_metrics_set.go; \
-		mv -f go_collector_metrics* prometheus; \
-		done
+		docker run \
+			--platform linux/amd64 \
+			--rm -v $(PWD):/workspace \
+			-w /workspace \
+			golang:$$GO_VERSION \
+			bash ./generate-go-collector.bash; \
+	done; \
+	go mod tidy
 
 .PHONY: fmt
 fmt: common-format

@@ -1,5 +1,56 @@
 ## Unreleased
 
+## 1.20.5 / 2024-10-15
+
+* [BUGFIX] testutil: Reverted #1424; functions using compareMetricFamilies are (again) only failing if filtered metricNames are in the expected input.
+
+## 1.20.4 / 2024-09-07
+
+* [BUGFIX] histograms: Fix possible data race when appending exemplars vs metrics gather. #1623
+
+## 1.20.3 / 2024-09-05
+
+* [BUGFIX] histograms: Fix possible data race when appending exemplars. #1608
+
+## 1.20.2 / 2024-08-23
+
+* [BUGFIX] promhttp: Unset Content-Encoding header when data is uncompressed. #1596
+
+## 1.20.1 / 2024-08-20
+
+* [BUGFIX] process-collector: Fixed unregistered descriptor error when using process collector with `PedanticRegistry` on linux machines. #1587
+
+## 1.20.0 / 2024-08-14
+
+* [CHANGE] :warning: go-collector: Remove `go_memstat_lookups_total` metric which was always 0; Go runtime stopped sharing pointer lookup statistics. #1577
+* [FEATURE] :warning: go-collector: Add 3 default metrics: `go_gc_gogc_percent`, `go_gc_gomemlimit_bytes` and `go_sched_gomaxprocs_threads` as those are recommended by the Go team. #1559
+* [FEATURE] go-collector: Add more information to all metrics' HELP e.g. the exact `runtime/metrics` sourcing each metric (if relevant). #1568 #1578
+* [FEATURE] testutil: Add CollectAndFormat method. #1503
+* [FEATURE] histograms: Add support for exemplars in native histograms. #1471
+* [FEATURE] promhttp: Add experimental support for `zstd` on scrape, controlled by the request `Accept-Encoding` header. #1496
+* [FEATURE] api/v1: Add `WithLimit` parameter to all API methods that supports it. #1544
+* [FEATURE] prometheus: Add support for created timestamps in constant histograms and constant summaries. #1537
+* [FEATURE] process-collector: Add network usage metrics: `process_network_receive_bytes_total` and `process_network_transmit_bytes_total`. #1555
+* [FEATURE] promlint: Add duplicated metric lint rule. #1472
+* [BUGFIX] promlint: Relax metric type in name linter rule. #1455
+* [BUGFIX] promhttp: Make sure server instrumentation wrapping supports new and future extra responseWriter methods. #1480
+* [BUGFIX] **breaking** testutil: Functions using compareMetricFamilies are now failing if filtered metricNames are not in the input. #1424 (reverted in 1.20.5)
+
+## 1.19.0 / 2024-02-27
+
+The module `prometheus/common v0.48.0` introduced an incompatibility when used together with client_golang (See https://github.com/prometheus/client_golang/pull/1448 for more details). If your project uses client_golang and you want to use `prometheus/common v0.48.0` or higher, please update client_golang to v1.19.0.
+
+* [CHANGE] Minimum required go version is now 1.20 (we also test client_golang against new 1.22 version). #1445 #1449
+* [FEATURE] collectors: Add version collector. #1422 #1427
+
+## 1.18.0 / 2023-12-22
+
+* [FEATURE] promlint: Allow creation of custom metric validations. #1311
+* [FEATURE] Go programs using client_golang can be built in wasip1 OS. #1350
+* [BUGFIX] histograms: Add timer to reset ASAP after bucket limiting has happened. #1367
+* [BUGFIX] testutil: Fix comparison of metrics with empty Help strings. #1378
+* [ENHANCEMENT] Improved performance of `MetricVec.WithLabelValues(...)`. #1360
+
 ## 1.17.0 / 2023-09-27
 
 * [CHANGE] Minimum required go version is now 1.19 (we also test client_golang against new 1.21 version). #1325

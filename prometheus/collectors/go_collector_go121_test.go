@@ -16,6 +16,8 @@
 
 package collectors
 
+import "sort"
+
 func withAllMetrics() []string {
 	return withBaseMetrics([]string{
 		"go_cgo_go_to_c_calls_calls_total",
@@ -63,6 +65,7 @@ func withAllMetrics() []string {
 		"go_godebug_non_default_behavior_multipartmaxheaders_events_total",
 		"go_godebug_non_default_behavior_multipartmaxparts_events_total",
 		"go_godebug_non_default_behavior_multipathtcp_events_total",
+		"go_godebug_non_default_behavior_netedns0_events_total",
 		"go_godebug_non_default_behavior_panicnil_events_total",
 		"go_godebug_non_default_behavior_randautoseed_events_total",
 		"go_godebug_non_default_behavior_tarinsecurepath_events_total",
@@ -138,20 +141,15 @@ func withMemoryMetrics() []string {
 }
 
 func withSchedulerMetrics() []string {
-	return []string{
-		"go_gc_duration_seconds",
-		"go_goroutines",
-		"go_info",
-		"go_memstats_last_gc_time_seconds",
+	return withBaseMetrics([]string{
 		"go_sched_gomaxprocs_threads",
 		"go_sched_goroutines_goroutines",
 		"go_sched_latencies_seconds",
-		"go_threads",
-	}
+	})
 }
 
 func withDebugMetrics() []string {
-	return []string{
+	return withBaseMetrics([]string{
 		"go_godebug_non_default_behavior_execerrdot_events_total",
 		"go_godebug_non_default_behavior_gocachehash_events_total",
 		"go_godebug_non_default_behavior_gocachetest_events_total",
@@ -163,6 +161,7 @@ func withDebugMetrics() []string {
 		"go_godebug_non_default_behavior_multipartmaxheaders_events_total",
 		"go_godebug_non_default_behavior_multipartmaxparts_events_total",
 		"go_godebug_non_default_behavior_multipathtcp_events_total",
+		"go_godebug_non_default_behavior_netedns0_events_total",
 		"go_godebug_non_default_behavior_panicnil_events_total",
 		"go_godebug_non_default_behavior_randautoseed_events_total",
 		"go_godebug_non_default_behavior_tarinsecurepath_events_total",
@@ -170,5 +169,30 @@ func withDebugMetrics() []string {
 		"go_godebug_non_default_behavior_x509sha1_events_total",
 		"go_godebug_non_default_behavior_x509usefallbackroots_events_total",
 		"go_godebug_non_default_behavior_zipinsecurepath_events_total",
+	})
+}
+
+var defaultRuntimeMetrics = []string{
+	"go_gc_gogc_percent",
+	"go_gc_gomemlimit_bytes",
+	"go_sched_gomaxprocs_threads",
+}
+
+func withDefaultRuntimeMetrics(metricNames []string, withoutGC, withoutSched bool) []string {
+	if withoutGC && withoutSched {
+		// If both flags are true, return the metricNames as is.
+		return metricNames
+	} else if withoutGC && !withoutSched {
+		// If only withoutGC is true, include "go_sched_gomaxprocs_threads" only.
+		metricNames = append(metricNames, []string{"go_sched_gomaxprocs_threads"}...)
+	} else if withoutSched && !withoutGC {
+		// If only withoutSched is true, exclude "go_sched_gomaxprocs_threads".
+		metricNames = append(metricNames, []string{"go_gc_gogc_percent", "go_gc_gomemlimit_bytes"}...)
+	} else {
+		// If neither flag is true, use the default metrics.
+		metricNames = append(metricNames, defaultRuntimeMetrics...)
 	}
+	// sorting is required
+	sort.Strings(metricNames)
+	return metricNames
 }

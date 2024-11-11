@@ -4,7 +4,7 @@
 #export DH_VERBOSE=1
 
 # Exclude sample code from compilation and installation.
-export DH_GOLANG_EXCLUDES := examples tutorial
+export DH_GOLANG_EXCLUDES := dagger examples tutorial
 
 %:
 	dh $@ --buildsystem=golang --builddirectory=_build

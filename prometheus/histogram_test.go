@@ -157,7 +157,7 @@ func TestHistogramConcurrency(t *testing.T) {
 		t.Skip("Skipping test in short mode.")
 	}
 
-	rand.Seed(42)
+	rand.New(rand.NewSource(42))
 
 	it := func(n uint32) bool {
 		mutations := int(n%1e4 + 1e4)
@@ -243,7 +243,7 @@ func TestHistogramVecConcurrency(t *testing.T) {
 		t.Skip("Skipping test in short mode.")
 	}
 
-	rand.Seed(42)
+	rand.New(rand.NewSource(42))
 
 	it := func(n uint32) bool {
 		mutations := int(n%1e4 + 1e4)
@@ -925,16 +925,16 @@ func TestNativeHistogram(t *testing.T) {
 			maxBuckets:       4,
 			minResetDuration: 9 * time.Minute,
 			want: &dto.Histogram{
-				SampleCount:   proto.Uint64(2),
-				SampleSum:     proto.Float64(7),
+				SampleCount:   proto.Uint64(3),
+				SampleSum:     proto.Float64(12.1),
 				Schema:        proto.Int32(2),
 				ZeroThreshold: proto.Float64(2.938735877055719e-39),
 				ZeroCount:     proto.Uint64(0),
 				PositiveSpan: []*dto.BucketSpan{
-					{Offset: proto.Int32(7), Length: proto.Uint32(2)},
+					{Offset: proto.Int32(7), Length: proto.Uint32(4)},
 				},
-				PositiveDelta:    []int64{1, 0},
-				CreatedTimestamp: timestamppb.New(now.Add(10 * time.Minute)), // We expect reset to happen after 9 minutes.
+				PositiveDelta:    []int64{1, 0, -1, 1},
+				CreatedTimestamp: timestamppb.New(now.Add(9 * time.Minute)), // We expect reset to happen after 8 minutes.
 			},
 		},
 		{
@@ -945,23 +945,27 @@ func TestNativeHistogram(t *testing.T) {
 			maxZeroThreshold: 1.2,
 			minResetDuration: 9 * time.Minute,
 			want: &dto.Histogram{
-				SampleCount:   proto.Uint64(2),
-				SampleSum:     proto.Float64(7),
+				SampleCount:   proto.Uint64(3),
+				SampleSum:     proto.Float64(12.1),
 				Schema:        proto.Int32(2),
 				ZeroThreshold: proto.Float64(2.938735877055719e-39),
 				ZeroCount:     proto.Uint64(0),
 				PositiveSpan: []*dto.BucketSpan{
-					{Offset: proto.Int32(7), Length: proto.Uint32(2)},
+					{Offset: proto.Int32(7), Length: proto.Uint32(4)},
 				},
-				PositiveDelta:    []int64{1, 0},
-				CreatedTimestamp: timestamppb.New(now.Add(10 * time.Minute)), // We expect reset to happen after 9 minutes.
+				PositiveDelta:    []int64{1, 0, -1, 1},
+				CreatedTimestamp: timestamppb.New(now.Add(9 * time.Minute)), // We expect reset to happen after 8 minutes.
 			},
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
-			ts := now
+			var (
+				ts         = now
+				funcToCall func()
+				whenToCall time.Duration
+			)
 
 			his := NewHistogram(HistogramOpts{
 				Name:                            "name",
@@ -972,12 +976,22 @@ func TestNativeHistogram(t *testing.T) {
 				NativeHistogramMinResetDuration: s.minResetDuration,
 				NativeHistogramMaxZeroThreshold: s.maxZeroThreshold,
 				now:                             func() time.Time { return ts },
+				afterFunc: func(d time.Duration, f func()) *time.Timer {
+					funcToCall = f
+					whenToCall = d
+					return nil
+				},
 			})
 
 			ts = ts.Add(time.Minute)
 			for _, o := range s.observations {
 				his.Observe(o)
 				ts = ts.Add(time.Minute)
+				whenToCall -= time.Minute
+				if funcToCall != nil && whenToCall <= 0 {
+					funcToCall()
+					funcToCall = nil
+				}
 			}
 			m := &dto.Metric{}
 			if err := his.Write(m); err != nil {
@@ -996,7 +1010,7 @@ func TestNativeHistogramConcurrency(t *testing.T) {
 		t.Skip("Skipping test in short mode.")
 	}
 
-	rand.Seed(42)
+	rand.New(rand.NewSource(42))
 
 	it := func(n uint32) bool {
 		ts := time.Now().Add(30 * time.Second).Unix()
@@ -1035,10 +1049,14 @@ func TestNativeHistogramConcurrency(t *testing.T) {
 
 			go func(vals []float64) {
 				start.Wait()
-				for _, v := range vals {
+				for i, v := range vals {
 					// An observation every 1 to 10 seconds.
 					atomic.AddInt64(&ts, rand.Int63n(10)+1)
-					his.Observe(v)
+					if i%2 == 0 {
+						his.Observe(v)
+					} else {
+						his.(ExemplarObserver).ObserveWithExemplar(v, Labels{"foo": "bar"})
+					}
 				}
 				end.Done()
 			}(vals)
@@ -1256,4 +1274,184 @@ func TestHistogramVecCreatedTimestampWithDeletes(t *testing.T) {
 
 	now = now.Add(1 * time.Hour)
 	expectCTsForMetricVecValues(t, histogramVec.MetricVec, dto.MetricType_HISTOGRAM, expected)
+}
+
+func TestNewConstHistogramWithCreatedTimestamp(t *testing.T) {
+	metricDesc := NewDesc(
+		"sample_value",
+		"sample value",
+		nil,
+		nil,
+	)
+	buckets := map[float64]uint64{25: 100, 50: 200}
+	createdTs := time.Unix(1719670764, 123)
+
+	h, err := NewConstHistogramWithCreatedTimestamp(metricDesc, 100, 200, buckets, createdTs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var metric dto.Metric
+	if err := h.Write(&metric); err != nil {
+		t.Fatal(err)
+	}
+
+	if metric.Histogram.CreatedTimestamp.AsTime().UnixMicro() != createdTs.UnixMicro() {
+		t.Errorf("Expected created timestamp %v, got %v", createdTs, &metric.Histogram.CreatedTimestamp)
+	}
+}
+
+func TestNativeHistogramExemplar(t *testing.T) {
+	// Test the histogram with positive NativeHistogramExemplarTTL and NativeHistogramMaxExemplars
+	h := NewHistogram(HistogramOpts{
+		Name:                        "test",
+		Help:                        "test help",
+		Buckets:                     []float64{1, 2, 3, 4},
+		NativeHistogramBucketFactor: 1.1,
+		NativeHistogramMaxExemplars: 3,
+		NativeHistogramExemplarTTL:  10 * time.Second,
+	}).(*histogram)
+
+	tcs := []struct {
+		name           string
+		addFunc        func(*histogram)
+		expectedValues []float64
+	}{
+		{
+			name: "add exemplars to the limit",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(1, Labels{"id": "1"})
+				h.ObserveWithExemplar(3, Labels{"id": "1"})
+				h.ObserveWithExemplar(5, Labels{"id": "1"})
+			},
+			expectedValues: []float64{1, 3, 5},
+		},
+		{
+			name: "remove exemplar in closest pair, the removed index equals to inserted index",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(4, Labels{"id": "1"})
+			},
+			expectedValues: []float64{1, 3, 4},
+		},
+		{
+			name: "remove exemplar in closest pair, the removed index is bigger than inserted index",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(0, Labels{"id": "1"})
+			},
+			expectedValues: []float64{0, 1, 4},
+		},
+		{
+			name: "remove exemplar with oldest timestamp, the removed index is smaller than inserted index",
+			addFunc: func(h *histogram) {
+				h.now = func() time.Time { return time.Now().Add(time.Second * 11) }
+				h.ObserveWithExemplar(6, Labels{"id": "1"})
+			},
+			expectedValues: []float64{0, 4, 6},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.addFunc(h)
+			compareNativeExemplarValues(t, h.nativeExemplars.exemplars, tc.expectedValues)
+		})
+	}
+
+	// Test the histogram with negative NativeHistogramExemplarTTL
+	h = NewHistogram(HistogramOpts{
+		Name:                        "test",
+		Help:                        "test help",
+		Buckets:                     []float64{1, 2, 3, 4},
+		NativeHistogramBucketFactor: 1.1,
+		NativeHistogramMaxExemplars: 3,
+		NativeHistogramExemplarTTL:  -1 * time.Second,
+	}).(*histogram)
+
+	tcs = []struct {
+		name           string
+		addFunc        func(*histogram)
+		expectedValues []float64
+	}{
+		{
+			name: "add exemplars to the limit",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(1, Labels{"id": "1"})
+				h.ObserveWithExemplar(3, Labels{"id": "1"})
+				h.ObserveWithExemplar(5, Labels{"id": "1"})
+			},
+			expectedValues: []float64{1, 3, 5},
+		},
+		{
+			name: "remove exemplar with oldest timestamp, the removed index is smaller than inserted index",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(4, Labels{"id": "1"})
+			},
+			expectedValues: []float64{3, 4, 5},
+		},
+		{
+			name: "remove exemplar with oldest timestamp, the removed index equals to inserted index",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(0, Labels{"id": "1"})
+			},
+			expectedValues: []float64{0, 4, 5},
+		},
+		{
+			name: "remove exemplar with oldest timestamp, the removed index is bigger than inserted index",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(3, Labels{"id": "1"})
+			},
+			expectedValues: []float64{0, 3, 4},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.addFunc(h)
+			compareNativeExemplarValues(t, h.nativeExemplars.exemplars, tc.expectedValues)
+		})
+	}
+
+	// Test the histogram with negative NativeHistogramMaxExemplars
+	h = NewHistogram(HistogramOpts{
+		Name:                        "test",
+		Help:                        "test help",
+		Buckets:                     []float64{1, 2, 3, 4},
+		NativeHistogramBucketFactor: 1.1,
+		NativeHistogramMaxExemplars: -1,
+		NativeHistogramExemplarTTL:  -1 * time.Second,
+	}).(*histogram)
+
+	tcs = []struct {
+		name           string
+		addFunc        func(*histogram)
+		expectedValues []float64
+	}{
+		{
+			name: "add exemplars to the limit, but no effect",
+			addFunc: func(h *histogram) {
+				h.ObserveWithExemplar(1, Labels{"id": "1"})
+				h.ObserveWithExemplar(3, Labels{"id": "1"})
+				h.ObserveWithExemplar(5, Labels{"id": "1"})
+			},
+			expectedValues: []float64{},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.addFunc(h)
+			compareNativeExemplarValues(t, h.nativeExemplars.exemplars, tc.expectedValues)
+		})
+	}
+}
+
+func compareNativeExemplarValues(t *testing.T, exps []*dto.Exemplar, values []float64) {
+	if len(exps) != len(values) {
+		t.Errorf("the count of exemplars is not %d", len(values))
+	}
+	for i, e := range exps {
+		if e.GetValue() != values[i] {
+			t.Errorf("the %dth exemplar value %v is not as expected: %v", i, e.GetValue(), values[i])
+		}
+	}
 }

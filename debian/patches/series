@@ -1,4 +1,5 @@
 0001-Bug854687-Disable_flaky_test.patch
 0002-api-headstats-int64-timestamps.patch
 0003-Fix-flaky-TestNativeHistogram.patch
-0004-Fix-basic-auth-test.patch
+0004-Add-metrics-in-test-for-Go-1.23.patch
+0005-Support-prometheus-common-0.59.0.patch
