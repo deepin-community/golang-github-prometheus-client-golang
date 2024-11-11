@@ -16,12 +16,11 @@
 
 package collectors
 
+import "sort"
+
 func withAllMetrics() []string {
 	return withBaseMetrics([]string{
 		"go_cgo_go_to_c_calls_calls_total",
-		"go_gc_cycles_automatic_gc_cycles_total",
-		"go_gc_cycles_forced_gc_cycles_total",
-		"go_gc_cycles_total_gc_cycles_total",
 		"go_cpu_classes_gc_mark_assist_cpu_seconds_total",
 		"go_cpu_classes_gc_mark_dedicated_cpu_seconds_total",
 		"go_cpu_classes_gc_mark_idle_cpu_seconds_total",
@@ -33,6 +32,9 @@ func withAllMetrics() []string {
 		"go_cpu_classes_scavenge_total_cpu_seconds_total",
 		"go_cpu_classes_total_cpu_seconds_total",
 		"go_cpu_classes_user_cpu_seconds_total",
+		"go_gc_cycles_automatic_gc_cycles_total",
+		"go_gc_cycles_forced_gc_cycles_total",
+		"go_gc_cycles_total_gc_cycles_total",
 		"go_gc_heap_allocs_by_size_bytes",
 		"go_gc_heap_allocs_bytes_total",
 		"go_gc_heap_allocs_objects_total",
@@ -106,14 +108,28 @@ func withMemoryMetrics() []string {
 }
 
 func withSchedulerMetrics() []string {
-	return []string{
-		"go_gc_duration_seconds",
-		"go_goroutines",
-		"go_info",
-		"go_memstats_last_gc_time_seconds",
+	return withBaseMetrics([]string{
 		"go_sched_gomaxprocs_threads",
 		"go_sched_goroutines_goroutines",
 		"go_sched_latencies_seconds",
-		"go_threads",
+	})
+}
+
+func withDebugMetrics() []string {
+	return withBaseMetrics([]string{})
+}
+
+var defaultRuntimeMetrics = []string{
+	"go_sched_gomaxprocs_threads",
+}
+
+func withDefaultRuntimeMetrics(metricNames []string, withoutGC, withoutSched bool) []string {
+	// If withoutSched is true, exclude "go_sched_gomaxprocs_threads".
+	if withoutSched {
+		return metricNames
 	}
+	metricNames = append(metricNames, defaultRuntimeMetrics...)
+	// sorting is required
+	sort.Strings(metricNames)
+	return metricNames
 }

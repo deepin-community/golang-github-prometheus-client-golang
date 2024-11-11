@@ -10,8 +10,8 @@ This is the [Go](http://golang.org) client library for
 instrumenting application code, and one for creating clients that talk to the
 Prometheus HTTP API.
 
-**This library requires Go1.19 or later.**
-> The library mandates the use of Go1.19 or subsequent versions. While it has demonstrated functionality with versions as old as Go 1.17, our commitment remains to offer support and rectifications for only the most recent three major releases.
+**This library requires Go1.20 or later.**
+> The library mandates the use of Go1.20 or subsequent versions. While it has demonstrated functionality with versions as old as Go 1.17, our commitment remains to offer support and rectifications for only the most recent three major releases.
 
 ## Important note about releases and stability
 
@@ -24,12 +24,10 @@ CHANGELOG.md.
 
 Features that require breaking changes in the stable parts of the repository
 are being batched up and tracked in the [v2
-milestone](https://github.com/prometheus/client_golang/milestone/2). The v2
-development happens in a [separate
-branch](https://github.com/prometheus/client_golang/tree/dev-v2) for the time
-being. v2 releases off that branch will happen once sufficient stability is
-reached. In view of the widespread use of this repository, v1 and v2 will
-coexist for a while to enable a convenient transition.
+milestone](https://github.com/prometheus/client_golang/milestone/2), but plans for further development of v2 at the moment.
+
+> NOTE: The initial v2 attempt is in a [separate branch](https://github.com/prometheus/client_golang/tree/dev-v2). We also started
+experimenting on a new `prometheus.V2.*` APIs in [the 1.x's V2 struct](https://github.com/prometheus/client_golang/blob/main/prometheus/vnext.go#L23). Help wanted!
 
 ## Instrumenting applications
 

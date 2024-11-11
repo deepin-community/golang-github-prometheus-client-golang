@@ -9,7 +9,7 @@ Last-Update: 2022-11-09
  1 file changed, 3 insertions(+)
 
 diff --git a/prometheus/histogram_test.go b/prometheus/histogram_test.go
-index 60b43fd..9455c3a 100644
+index 39bb0dc..88e900f 100644
 --- a/prometheus/histogram_test.go
 +++ b/prometheus/histogram_test.go
 @@ -469,6 +469,9 @@ func TestHistogramExemplar(t *testing.T) {

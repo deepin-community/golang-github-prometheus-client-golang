@@ -203,7 +203,7 @@ func TestSummaryConcurrency(t *testing.T) {
 		t.Skip("Skipping test in short mode.")
 	}
 
-	rand.Seed(42)
+	rand.New(rand.NewSource(42))
 	objMap := map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
 
 	it := func(n uint32) bool {
@@ -284,7 +284,7 @@ func TestSummaryVecConcurrency(t *testing.T) {
 		t.Skip("Skipping test in short mode.")
 	}
 
-	rand.Seed(42)
+	rand.New(rand.NewSource(42))
 	objMap := map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
 
 	objSlice := make([]float64, 0, len(objMap))
@@ -472,5 +472,30 @@ func TestSummaryVecCreatedTimestampWithDeletes(t *testing.T) {
 			now = now.Add(1 * time.Hour)
 			expectCTsForMetricVecValues(t, summaryVec.MetricVec, dto.MetricType_SUMMARY, expected)
 		})
+	}
+}
+
+func TestNewConstSummaryWithCreatedTimestamp(t *testing.T) {
+	metricDesc := NewDesc(
+		"sample_value",
+		"sample value",
+		nil,
+		nil,
+	)
+	quantiles := map[float64]float64{50: 200.12, 99: 500.342}
+	createdTs := time.Unix(1719670764, 123)
+
+	s, err := NewConstSummaryWithCreatedTimestamp(metricDesc, 100, 200, quantiles, createdTs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var metric dto.Metric
+	if err := s.Write(&metric); err != nil {
+		t.Fatal(err)
+	}
+
+	if metric.Summary.CreatedTimestamp.AsTime().UnixMicro() != createdTs.UnixMicro() {
+		t.Errorf("Expected created timestamp %v, got %v", createdTs, &metric.Summary.CreatedTimestamp)
 	}
 }

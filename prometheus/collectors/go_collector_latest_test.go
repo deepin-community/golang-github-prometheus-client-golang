@@ -20,10 +20,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"reflect"
 	"regexp"
 	"sort"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -37,8 +38,32 @@ var baseMetrics = []string{
 	"go_threads",
 }
 
+var memstatMetrics = []string{
+	"go_memstats_alloc_bytes",
+	"go_memstats_alloc_bytes_total",
+	"go_memstats_buck_hash_sys_bytes",
+	"go_memstats_frees_total",
+	"go_memstats_gc_sys_bytes",
+	"go_memstats_heap_alloc_bytes",
+	"go_memstats_heap_idle_bytes",
+	"go_memstats_heap_inuse_bytes",
+	"go_memstats_heap_objects",
+	"go_memstats_heap_released_bytes",
+	"go_memstats_heap_sys_bytes",
+	"go_memstats_mallocs_total",
+	"go_memstats_mcache_inuse_bytes",
+	"go_memstats_mcache_sys_bytes",
+	"go_memstats_mspan_inuse_bytes",
+	"go_memstats_mspan_sys_bytes",
+	"go_memstats_next_gc_bytes",
+	"go_memstats_other_sys_bytes",
+	"go_memstats_stack_inuse_bytes",
+	"go_memstats_stack_sys_bytes",
+	"go_memstats_sys_bytes",
+}
+
 func TestGoCollectorMarshalling(t *testing.T) {
-	reg := prometheus.NewRegistry()
+	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(NewGoCollector(
 		WithGoCollectorRuntimeMetrics(GoRuntimeMetricsRule{
 			Matcher: regexp.MustCompile("/.*"),
@@ -54,8 +79,28 @@ func TestGoCollectorMarshalling(t *testing.T) {
 	}
 }
 
+func TestWithGoCollectorDefault(t *testing.T) {
+	reg := prometheus.NewPedanticRegistry()
+	reg.MustRegister(NewGoCollector())
+	result, err := reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := []string{}
+	for _, r := range result {
+		got = append(got, r.GetName())
+	}
+
+	expected := append(withBaseMetrics(memstatMetrics), defaultRuntimeMetrics...)
+	sort.Strings(expected)
+	if diff := cmp.Diff(got, expected); diff != "" {
+		t.Errorf("[IMPORTANT, those are default metrics, can't change in 1.x] missmatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestWithGoCollectorMemStatsMetricsDisabled(t *testing.T) {
-	reg := prometheus.NewRegistry()
+	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(NewGoCollector(
 		WithGoCollectorMemStatsMetricsDisabled(),
 	))
@@ -69,8 +114,8 @@ func TestWithGoCollectorMemStatsMetricsDisabled(t *testing.T) {
 		got = append(got, r.GetName())
 	}
 
-	if !reflect.DeepEqual(got, baseMetrics) {
-		t.Errorf("got %v, want %v", got, baseMetrics)
+	if diff := cmp.Diff(got, withBaseMetrics(defaultRuntimeMetrics)); diff != "" {
+		t.Errorf("missmatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -83,7 +128,7 @@ func TestGoCollectorAllowList(t *testing.T) {
 		{
 			name:     "Without any rules",
 			rules:    nil,
-			expected: baseMetrics,
+			expected: withBaseMetrics(defaultRuntimeMetrics),
 		},
 		{
 			name:     "allow all",
@@ -93,21 +138,26 @@ func TestGoCollectorAllowList(t *testing.T) {
 		{
 			name:     "allow GC",
 			rules:    []GoRuntimeMetricsRule{MetricsGC},
-			expected: withGCMetrics(),
+			expected: withDefaultRuntimeMetrics(withGCMetrics(), true, false),
 		},
 		{
 			name:     "allow Memory",
 			rules:    []GoRuntimeMetricsRule{MetricsMemory},
-			expected: withMemoryMetrics(),
+			expected: withDefaultRuntimeMetrics(withMemoryMetrics(), false, false),
 		},
 		{
 			name:     "allow Scheduler",
 			rules:    []GoRuntimeMetricsRule{MetricsScheduler},
-			expected: withSchedulerMetrics(),
+			expected: withDefaultRuntimeMetrics(withSchedulerMetrics(), false, true),
+		},
+		{
+			name:     "allow debug",
+			rules:    []GoRuntimeMetricsRule{MetricsDebug},
+			expected: withDefaultRuntimeMetrics(withDebugMetrics(), false, false),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			reg := prometheus.NewRegistry()
+			reg := prometheus.NewPedanticRegistry()
 			reg.MustRegister(NewGoCollector(
 				WithGoCollectorMemStatsMetricsDisabled(),
 				WithGoCollectorRuntimeMetrics(test.rules...),
@@ -122,8 +172,8 @@ func TestGoCollectorAllowList(t *testing.T) {
 				got = append(got, r.GetName())
 			}
 
-			if !reflect.DeepEqual(got, test.expected) {
-				t.Errorf("got %v, want %v", got, test.expected)
+			if diff := cmp.Diff(got, test.expected); diff != "" {
+				t.Errorf("missmatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -144,7 +194,7 @@ func TestGoCollectorDenyList(t *testing.T) {
 		{
 			name:     "Without any matchers",
 			matchers: nil,
-			expected: baseMetrics,
+			expected: withBaseMetrics(defaultRuntimeMetrics),
 		},
 		{
 			name:     "deny all",
@@ -157,11 +207,19 @@ func TestGoCollectorDenyList(t *testing.T) {
 				regexp.MustCompile("^/gc/.*"),
 				regexp.MustCompile("^/sched/latencies:.*"),
 			},
+			expected: withDefaultRuntimeMetrics(baseMetrics, true, false),
+		},
+		{
+			name: "deny gc and scheduler",
+			matchers: []*regexp.Regexp{
+				regexp.MustCompile("^/gc/.*"),
+				regexp.MustCompile("^/sched/.*"),
+			},
 			expected: baseMetrics,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			reg := prometheus.NewRegistry()
+			reg := prometheus.NewPedanticRegistry()
 			reg.MustRegister(NewGoCollector(
 				WithGoCollectorMemStatsMetricsDisabled(),
 				WithoutGoCollectorRuntimeMetrics(test.matchers...),
@@ -176,17 +234,17 @@ func TestGoCollectorDenyList(t *testing.T) {
 				got = append(got, r.GetName())
 			}
 
-			if !reflect.DeepEqual(got, test.expected) {
-				t.Errorf("got %v, want %v", got, test.expected)
+			if diff := cmp.Diff(got, test.expected); diff != "" {
+				t.Errorf("missmatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
 func ExampleGoCollector() {
-	reg := prometheus.NewRegistry()
+	reg := prometheus.NewPedanticRegistry()
 
-	// Register the GoCollector with the default options. Only the base metrics will be enabled.
+	// Register the GoCollector with the default options. Only the base metrics, default runtime metrics and memstats are enabled.
 	reg.MustRegister(NewGoCollector())
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
@@ -194,7 +252,7 @@ func ExampleGoCollector() {
 }
 
 func ExampleGoCollector_WithAdvancedGoMetrics() {
-	reg := prometheus.NewRegistry()
+	reg := prometheus.NewPedanticRegistry()
 
 	// Enable Go metrics with pre-defined rules. Or your custom rules.
 	reg.MustRegister(
